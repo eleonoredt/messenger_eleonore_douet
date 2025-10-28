@@ -23,15 +23,18 @@ server = {
 
 print('=== Messenger ===')
 print('x. Leave')
+print('u. Afficher les utilisateurs')
 choice = input('Select an option: ')
 if choice == 'x':
     print('Bye!')
 elif choice == 'u':
-    for i in range (len(server['users'])) : 
-        nomid= str(server['users'][i]['id']) + '. ' +server['users'][i]['name']
+    for user in (server['users']) : 
+        nomid = str(user['id']) + '. ' + user['name'] #nomid=f"{user['id']}. {user['name']}
         print(nomid)
 elif choice == 'gp':
-    groupe= server['channels'][1]
+    for i in range (len(server['users'])-1) :
+        groupe = str(server['channels'][i]['id']) + '. ' + server['channels'][i]['name']
+        print(groupe)
 else:
     print('Unknown option:', choice)
 
