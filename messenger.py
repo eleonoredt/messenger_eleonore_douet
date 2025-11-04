@@ -2,12 +2,24 @@ from datetime import datetime
 import json
 
 with open('servers.json') as f:
-    server= json.load(f)
+    server = json.load(f)
+
+def sauvegarderjson():  
+    with open('servers.json', 'w') as fichier:
+        json.dump(server, fichier, indent=4)
+
+#class User:
+    #def __init__(self, nom, id):
+       # for user in (server['users']) :
+        #    nom = user['name']
+         #   id = user['id']
+        
 
 
 ident=[]
 idgp=[]
 idpers=[]
+idhh=[]
 
 idnom = 0
 
@@ -26,6 +38,8 @@ def menu():
     print('u. Afficher les utilisateurs')
     print('gp. Afficher les groupes')
     print('b. Back to the menu')
+    print('ng: Nouveau groupe')
+    print('n : nouvel utilisateur')
     choice = input('Select an option: ')  
     if choice == 'x':
         print('Bye!')
@@ -51,21 +65,27 @@ def menu():
             menu()
     elif choice == 'b':
         menu()
+    elif choice == 'ng':
+        newgp()
+    elif choice == 'n':
+        newuser()
     else:
         print('Unknown option:', choice)
 
 def users():
+    print('Les utilisitateurs sont: ')
     for user in (server['users']) : 
         nomid = str(user['id']) + '. ' + user['name'] #nomid=f"{user['id']}. {user['name']}
         print(nomid)
 
 def newuser():
-    nomnew = input('Donner le nom du nouvel utilisateur entre guillemets ')
+    nomnew = input('Donner le nom du nouvel utilisateur ')
     for user in (server['users']) : 
         ident.append(user['id'])
     newid = max(ident) + 1
     newuser = {'id':newid , 'name': nomnew}
     server['users'].append(newuser)
+    sauvegarderjson()
 
 def groupe():
     for serv in (server['channels']) :
@@ -78,18 +98,30 @@ def affichegroupe():
         print(message)
 
 def newgp():
+    for user in (server['users']) : 
+        idhh.append(user['id'])
     newnomgp = input('Donnez le nom du groupe  ')
     for user in (server['channels']) : 
         idgp.append(user['id'])
     idgpnew = max(idgp) + 1
-    print('voici la liste des utilisateurs ')
+    print('Voici la liste des utilisateurs: ')
     users()
-    nbpers = int(input('Combien d utilisateurs? '))
-    for i in range (nbpers): 
-        idpersi = input('Donner lid des personnes: ')
-        idpers.append(idpersi)
-    gpnew= {'id': idgpnew, 'name': newnomgp, 'member_ids': idpers}
+    nbpers = int(input('Combien d utilisateurs souhaitez vous ajouter? '))
+    if nbpers>len(server['users']): 
+        print('Il n y a pas assez d utilisateurs, refaite un groupe qui fonctionne')
+        newgp()
+    else: 
+        for i in range (nbpers): 
+            idpersi = input('Donner l id des personnes: ')
+            for user in (server['users']): 
+                if idpersi not in (idhh):
+                    print('Cet id n existe pas, redonnez un groupe qui marche ')
+                    newgp()
+                else:
+                    idpers.append(idpersi)
+    gpnew = {'id': idgpnew, 'name': newnomgp, 'member_ids': idpers }
     server['channels'].append(gpnew)
+    sauvegarderjson()
     
 
 menu()

@@ -1,10 +1,48 @@
 {
     "users": [
-        {"id": 41, "name": "Alice"},
-        {"id": 23, "name": "Bob"}
+        {
+            "id": 41,
+            "name": "Alice"
+        },
+        {
+            "id": 23,
+            "name": "Bob"
+        },
+        {
+            "id": 42,
+            "name": "adele"
+        },
+        {
+            "id": 43,
+            "name": "ele"
+        },
+        {
+            "id": 44,
+            "name": "7"
+        }
     ],
     "channels": [
-        {"id": 12, "name": "Town square", "member_ids": [41, 23]}
+        {
+            "id": 12,
+            "name": "Town square",
+            "member_ids": [
+                41,
+                23
+            ]
+        },
+        {
+            "id": 13,
+            "name": "Amis",
+            "member_ids": [
+                "42",
+                "41"
+            ]
+        },
+        {
+            "id": 14,
+            "name": "love",
+            "member_ids": []
+        }
     ],
     "messages": [
         {
