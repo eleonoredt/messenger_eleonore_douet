@@ -92,22 +92,19 @@ def affichegroupe():
         print(message)
 
 def newgp():
-    newnomgp = input('Donnez le nom du groupe entre guillemets ')
+    newnomgp = input('Donnez le nom du groupe  ')
     for user in (server['channels']) : 
         idgp.append(user['id'])
-    idgpnew = max(idgp)
-    
-    nbpers = input('Combien de personnes dans le groupe? ')
-    if nbpers == 1: 
-        personnes = input('Donner le nom du nouvel utilisateur entre guillemets ')
-        idpers.append(get_id_from_name(personnes))
-    else: 
-        for i in nbpers: 
-            personnes = input('Donner le nom du premier utilisateur entre guillemets ')
-            idpers.append(get_id_from_name(personnes))
-    gpnew= {'id': idgpnew, 'name': 'newnomgp', 'member_ids': idpers}
+    idgpnew = max(idgp) + 1
+    print('voici la liste des utilisateurs ')
+    users()
+    nbpers = int(input('Combien d utilisateurs? '))
+    for i in range (nbpers): 
+        idpersi = input('Donner lid des personnes: ')
+        idpers.append(idpersi)
+    gpnew= {'id': idgpnew, 'name': newnomgp, 'member_ids': idpers}
     server['channels'].append(gpnew)
-
+    
 
 menu()
 
