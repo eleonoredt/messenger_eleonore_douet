@@ -1,1 +1,30 @@
 import sys
+print('=== Messenger ===')
+print('x. Leave')
+print('u. Afficher les utilisateurs')
+print('gp. Afficher les groupes')
+print('b. Back to the menu')
+choice = input('Select an option: ')
+if choice == 'x':
+    print('Bye!')
+elif choice == 'u':
+    users()
+    choice3 = input('b : go back to menu, n: create new user ')
+    if choice3 == 'b': 
+        menu()
+    elif choice3 == 'n': 
+        newuser()
+elif choice == 'gp':
+    groupe()
+    choice2 = input('Select a group by its id: ')
+    for serv in (server['channels']) :
+        if choice2 == serv['id']:
+          affichegroupe()  
+        else: 
+            print('No group')
+elif choice == 'b':
+    menu()
+else:
+    print('Unknown option:', choice)
+    
+
