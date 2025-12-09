@@ -20,16 +20,25 @@ ident=[]
 idgp=[]
 idpers=[]
 idhh=[]
+mid = []
 
 idnom = 0
 
 def get_id_from_name(nom):
-    for user in (server['users']):
+    idnom = None 
+    for user in server['users']:
         if nom == user['name']:
             idnom = user['id']
-        else:
-            idnom
+            break 
     return idnom
+
+def get_name_from_id(user_id):
+    nom = None 
+    for user in server['users']:
+        if user['id'] == user_id:
+            nom = user['name']
+            break  
+    return nom
 
 
 def menu():
@@ -40,6 +49,8 @@ def menu():
     print('b. Back to the menu')
     print('ng: Nouveau groupe')
     print('n : nouvel utilisateur')
+    print('m : nouveau message dans un groupe')
+    print('d : supprimer un groupe')
     choice = input('Select an option: ')  
     if choice == 'x':
         print('Bye!')
@@ -52,23 +63,29 @@ def menu():
             newuser()
     elif choice == 'gp':
         groupe()
-        choice2 = input('Select a group by its id: ')
+        choice2 = int(input('Select a group by its id: '))
         for serv in (server['channels']) :
             if choice2 == serv['id']:
-                affichegroupe()  
-            else: 
-                print('No group')
+                affichegroupe() 
+            break 
+        else: 
+            print('No group')
         choicegp = input('Voulez vous creer un nouveau groupe? si oui tapez ng sinon tapez b pour revenir ')
         if choicegp == 'ng':
             newgp()
         else :
             menu()
+    elif choice == 'm':
+        newmessage()
+        
     elif choice == 'b':
         menu()
     elif choice == 'ng':
         newgp()
     elif choice == 'n':
         newuser()
+    elif choice == 'd':
+        suppgp()
     else:
         print('Unknown option:', choice)
 
@@ -112,7 +129,7 @@ def newgp():
         newgp()
     else: 
         for i in range (nbpers): 
-            idpersi = input('Donner l id des personnes: ')
+            idpersi = int(input('Donner l id des personnes: '))
             for user in (server['users']): 
                 if idpersi not in (idhh):
                     print('Cet id n existe pas, redonnez un groupe qui marche ')
@@ -121,6 +138,51 @@ def newgp():
                     idpers.append(idpersi)
     gpnew = {'id': idgpnew, 'name': newnomgp, 'member_ids': idpers }
     server['channels'].append(gpnew)
+    sauvegarderjson()
+
+def suppgp(): 
+    gpid = int(input('Donner l id du gp que vous voulez sup '))
+    initial_length = len(server['channels'])
+    server['channels'] = [
+        channel for channel in server['channels'] 
+        if channel['id'] != gpid
+    ]
+    final_length = len(server['channels'])
+    if final_length < initial_length:
+        sauvegarderjson()
+        print("Groupe supprimé et le fichier a été sauvegardé.")
+    else:
+        print(" Erreur : Aucun groupe trouvé avec l ID.")
+
+
+def newmessage():
+    #check il est dans groupe et new mesage 
+    sendername = input('Quel est votre nom ')
+    senderid = int(get_id_from_name(sendername))
+    print('voici les groupes ou vous etes:')
+    for channel in (server['channels']): 
+        if senderid in channel['member_ids']: 
+            print(channel['id'])
+            for id_membre in channel['member_ids']:
+                id_membres=get_name_from_id(id_membre)
+                print(id_membres)
+    cavousva = input('Un des groupe vous convient ? si oui on continue sinon tapez nn')
+    if cavousva == 'nn' : 
+        newgp()
+    for channel in (server['channels']): 
+        if senderid in channel['member_ids']: 
+            print(channel['id'])
+            for id_membre in channel['member_ids']:
+                id_membres=get_name_from_id(id_membre)
+                print(id_membres)
+    gp = int(input('Donner l \'indentifiant du groupe '))
+    texto = input('Ecrivez votre messsage : ')
+    for channel in (server['channels']) : 
+        mid.append(channel['id'])
+    newmid =  max(mid) + 1
+    newmess = {'id': newmid, "reception_date": "04/11/25", "sender_id": senderid, "channel": gp,
+            "content": texto}
+    server['messages'].append(newmess)
     sauvegarderjson()
     
 
