@@ -19,6 +19,14 @@
         {
             "id": 44,
             "name": "7"
+        },
+        {
+            "id": 45,
+            "name": "'douet'"
+        },
+        {
+            "id": 46,
+            "name": "'douet'"
         }
     ],
     "channels": [
@@ -34,14 +42,40 @@
             "id": 13,
             "name": "Amis",
             "member_ids": [
-                "42",
-                "41"
+                42,
+                41
             ]
         },
         {
             "id": 14,
             "name": "love",
             "member_ids": []
+        },
+        {
+            "id": 15,
+            "name": "new",
+            "member_ids": [
+                44,
+                44,
+                44,
+                44,
+                44,
+                44,
+                44
+            ]
+        },
+        {
+            "id": 16,
+            "name": "elo",
+            "member_ids": [
+                44,
+                44,
+                44,
+                44,
+                44,
+                44,
+                44
+            ]
         }
     ],
     "messages": [
@@ -51,6 +85,20 @@
             "sender_id": 41,
             "channel": 12,
             "content": "Hi "
+        },
+        {
+            "id": 16,
+            "reception_date": "04/11/25",
+            "sender_id": 41,
+            "channel": 13,
+            "content": "Coucou mes vies"
+        },
+        {
+            "id": 15,
+            "reception_date": "04/11/25",
+            "sender_id": 41,
+            "channel": 13,
+            "content": "'hey'"
         }
     ]
 }
