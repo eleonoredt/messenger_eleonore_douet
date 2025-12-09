@@ -1,8 +1,32 @@
 from datetime import datetime
 import json
 
+class User:
+    def __init__(self, name: str, id: int):
+            self.name = name
+            self.id = id
+
+class Channels:
+    def __init__(self, name: str, id: int, member_ids: list):
+            self.name = name
+            self.id = id
+            self.member_ids = member_ids
+
+class Messages: 
+    def __init__(self, id: int, reception_date: str,sender_id: int,channel: int,content: str):
+        self.id = id
+        self.reception_date = reception_date
+        self.sender_id = sender_id
+        self.channel = channel
+        self.content = content
+
 with open('servers.json') as f:
     server = json.load(f)
+    user_list:list[User]=[]
+    for user in server['users']: 
+         user_list.append(user)
+    server['users']=user_list
+print(type(server['users']))
 
 def sauvegarderjson():  
     with open('servers.json', 'w') as fichier:
@@ -22,16 +46,15 @@ idpers=[]
 idhh=[]
 mid = []
 
-idnom = 0
 
 def get_id_from_name(nom):
     idnom = None 
     for user in server['users']:
-        if nom == user['name']:
-            idnom = user['id']
+        if nom == user.name:
+            idnom = user.id
             break 
     return idnom
-
+print(get_id_from_name('Bob'))
 def get_name_from_id(user_id):
     nom = None 
     for user in server['users']:
@@ -130,12 +153,12 @@ def newgp():
     else: 
         for i in range (nbpers): 
             idpersi = int(input('Donner l id des personnes: '))
-            for user in (server['users']): 
-                if idpersi not in (idhh):
-                    print('Cet id n existe pas, redonnez un groupe qui marche ')
-                    newgp()
-                else:
-                    idpers.append(idpersi)
+            if idpersi not in (idhh):
+                print('Cet id n existe pas, redonnez un groupe qui marche ')
+                newgp()
+            else:
+                idpers.append(idpersi)
+        print(idpers)
     gpnew = {'id': idgpnew, 'name': newnomgp, 'member_ids': idpers }
     server['channels'].append(gpnew)
     sauvegarderjson()
@@ -166,15 +189,9 @@ def newmessage():
             for id_membre in channel['member_ids']:
                 id_membres=get_name_from_id(id_membre)
                 print(id_membres)
-    cavousva = input('Un des groupe vous convient ? si oui on continue sinon tapez nn')
-    if cavousva == 'nn' : 
-        newgp()
-    for channel in (server['channels']): 
-        if senderid in channel['member_ids']: 
-            print(channel['id'])
-            for id_membre in channel['member_ids']:
-                id_membres=get_name_from_id(id_membre)
-                print(id_membres)
+    #cavousva = input('Un des groupe vous convient ? si oui on continue sinon tapez nn')
+   # if cavousva == 'nn' : 
+    #    newgp()
     gp = int(input('Donner l \'indentifiant du groupe '))
     texto = input('Ecrivez votre messsage : ')
     for channel in (server['channels']) : 
