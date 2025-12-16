@@ -49,7 +49,8 @@ def sauvegarderjson():
     server2['channels']= dico_channel_list
     dico_mess_list:list[dict]=[]
     for mess in server['messages']:
-        dico_mess_list.append({ "id": mess.id, "reception_date": mess.reception_date, "sender_id": 41, "channel": 13, "content": "'hey'"})
+        dico_mess_list.append({ "id": mess.id, "reception_date": mess.reception_date, "sender_id": mess.sender_id, "channel": mess.channel, "content": mess.content})
+    server2['messages']=dico_mess_list
     with open('servers.json', 'w') as fichier:
         json.dump(server2, fichier, indent=4)
 
