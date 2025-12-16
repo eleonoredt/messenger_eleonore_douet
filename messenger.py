@@ -24,20 +24,20 @@ with open('servers.json') as f:
     server = json.load(f)
     user_list:list[User]=[]
     for user in server['users']: 
-         user_list.append(user)
+        user_list.append(User(user['name'], user['id']))
+
+
     server['users']=user_list
-print(type(server['users']))
+
 
 def sauvegarderjson():  
+    dico_list:list[dict]=[]
+    for user in server['users']: 
+        dico_list.append({'name': user.name, 'id': user.id})
+    server['users']= dico_list
     with open('servers.json', 'w') as fichier:
         json.dump(server, fichier, indent=4)
 
-#class User:
-    #def __init__(self, nom, id):
-       # for user in (server['users']) :
-        #    nom = user['name']
-         #   id = user['id']
-        
 
 
 ident=[]
@@ -58,8 +58,8 @@ print(get_id_from_name('Bob'))
 def get_name_from_id(user_id):
     nom = None 
     for user in server['users']:
-        if user['id'] == user_id:
-            nom = user['name']
+        if user.id == user_id:
+            nom = user.name
             break  
     return nom
 
@@ -88,7 +88,7 @@ def menu():
         groupe()
         choice2 = int(input('Select a group by its id: '))
         for serv in (server['channels']) :
-            if choice2 == serv['id']:
+            if choice2 == serv.id:
                 affichegroupe() 
             break 
         else: 
@@ -115,15 +115,15 @@ def menu():
 def users():
     print('Les utilisitateurs sont: ')
     for user in (server['users']) : 
-        nomid = str(user['id']) + '. ' + user['name'] #nomid=f"{user['id']}. {user['name']}
+        nomid = str(user.id) + '. ' + user.name #nomid=f"{user['id']}. {user['name']}
         print(nomid)
 
 def newuser():
     nomnew = input('Donner le nom du nouvel utilisateur ')
     for user in (server['users']) : 
-        ident.append(user['id'])
+        ident.append(user.id)
     newid = max(ident) + 1
-    newuser = {'id':newid , 'name': nomnew}
+    newuser = User(nomnew, newid)
     server['users'].append(newuser)
     sauvegarderjson()
 

@@ -1,32 +1,36 @@
 {
     "users": [
         {
-            "id": 41,
-            "name": "Alice"
+            "name": "Alice",
+            "id": 41
         },
         {
-            "id": 23,
-            "name": "Bob"
+            "name": "Bob",
+            "id": 23
         },
         {
-            "id": 42,
-            "name": "adele"
+            "name": "adele",
+            "id": 42
         },
         {
-            "id": 43,
-            "name": "ele"
+            "name": "ele",
+            "id": 43
         },
         {
-            "id": 44,
-            "name": "7"
+            "name": "7",
+            "id": 44
         },
         {
-            "id": 45,
-            "name": "'douet'"
+            "name": "'douet'",
+            "id": 45
         },
         {
-            "id": 46,
-            "name": "'douet'"
+            "name": "'douet'",
+            "id": 46
+        },
+        {
+            "name": "Gui",
+            "id": 47
         }
     ],
     "channels": [
