@@ -25,18 +25,33 @@ with open('servers.json') as f:
     user_list:list[User]=[]
     for user in server['users']: 
         user_list.append(User(user['name'], user['id']))
-
+    channel_list:list[Channels]=[]
+    for channel in server['channels']:
+        channel_list.append(Channels(channel['name'], channel['id'], channel['member_ids']))
+    message_list:list[Messages]=[]
+    for mess in server['messages']:
+        message_list.append(Messages(mess['id'], mess['reception_date'], mess['sender_id'], mess['channel'], mess['content']))
 
     server['users']=user_list
+    server['channels']=channel_list
+    server['messages']=message_list
 
 
 def sauvegarderjson():  
-    dico_list:list[dict]=[]
+    server2 = {}
+    dico_user_list:list[dict]=[]
     for user in server['users']: 
-        dico_list.append({'name': user.name, 'id': user.id})
-    server['users']= dico_list
+        dico_user_list.append({'name': user.name, 'id': user.id})
+    server2['users']= dico_user_list
+    dico_channel_list:list[dict]=[]
+    for channel in server['channels']: 
+        dico_channel_list.append({'name': channel.name, 'id': channel.id, 'member_ids': channel.member_ids})
+    server2['channels']= dico_channel_list
+    dico_mess_list:list[dict]=[]
+    for mess in server['messages']:
+        dico_mess_list.append({ "id": mess.id, "reception_date": mess.reception_date, "sender_id": 41, "channel": 13, "content": "'hey'"})
     with open('servers.json', 'w') as fichier:
-        json.dump(server, fichier, indent=4)
+        json.dump(server2, fichier, indent=4)
 
 
 
@@ -87,8 +102,8 @@ def menu():
     elif choice == 'gp':
         groupe()
         choice2 = int(input('Select a group by its id: '))
-        for serv in (server['channels']) :
-            if choice2 == serv.id:
+        for chanel in (server['channels']) :
+            if choice2 == channel.id:
                 affichegroupe() 
             break 
         else: 
@@ -128,8 +143,8 @@ def newuser():
     sauvegarderjson()
 
 def groupe():
-    for serv in (server['channels']) :
-        groupe = str(serv['id']) + '. ' + serv['name']
+    for channel in (server['channels']) :
+        groupe = str(channel.id) + '. ' + channel.name
         print(groupe)
 
 def affichegroupe():
@@ -139,10 +154,10 @@ def affichegroupe():
 
 def newgp():
     for user in (server['users']) : 
-        idhh.append(user['id'])
+        idhh.append(user.id)
     newnomgp = input('Donnez le nom du groupe  ')
-    for user in (server['channels']) : 
-        idgp.append(user['id'])
+    for channel in (server['channels']) : 
+        idgp.append(channel.id)
     idgpnew = max(idgp) + 1
     print('Voici la liste des utilisateurs: ')
     users()
@@ -159,7 +174,7 @@ def newgp():
             else:
                 idpers.append(idpersi)
         print(idpers)
-    gpnew = {'id': idgpnew, 'name': newnomgp, 'member_ids': idpers }
+    gpnew = Channels(newnomgp, idgpnew, idpers )
     server['channels'].append(gpnew)
     sauvegarderjson()
 
@@ -168,7 +183,7 @@ def suppgp():
     initial_length = len(server['channels'])
     server['channels'] = [
         channel for channel in server['channels'] 
-        if channel['id'] != gpid
+        if channel.id != gpid
     ]
     final_length = len(server['channels'])
     if final_length < initial_length:
@@ -184,9 +199,9 @@ def newmessage():
     senderid = int(get_id_from_name(sendername))
     print('voici les groupes ou vous etes:')
     for channel in (server['channels']): 
-        if senderid in channel['member_ids']: 
-            print(channel['id'])
-            for id_membre in channel['member_ids']:
+        if senderid in channel.member_ids: 
+            print(channel.id)
+            for id_membre in channel.member_ids:
                 id_membres=get_name_from_id(id_membre)
                 print(id_membres)
     #cavousva = input('Un des groupe vous convient ? si oui on continue sinon tapez nn')
@@ -195,10 +210,9 @@ def newmessage():
     gp = int(input('Donner l \'indentifiant du groupe '))
     texto = input('Ecrivez votre messsage : ')
     for channel in (server['channels']) : 
-        mid.append(channel['id'])
+        mid.append(channel.id)
     newmid =  max(mid) + 1
-    newmess = {'id': newmid, "reception_date": "04/11/25", "sender_id": senderid, "channel": gp,
-            "content": texto}
+    newmess = Messages( newmid, "04/11/25", senderid,  gp, texto)
     server['messages'].append(newmess)
     sauvegarderjson()
     
