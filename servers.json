@@ -31,35 +31,90 @@
         {
             "name": "Gui",
             "id": 47
+        },
+        {
+            "name": "x",
+            "id": 48
+        },
+        {
+            "name": "eleonore",
+            "id": 49
+        },
+        {
+            "name": "sarah",
+            "id": 50
+        },
+        {
+            "name": "colin",
+            "id": 51
+        },
+        {
+            "name": "amanda",
+            "id": 52
         }
     ],
     "channels": [
         {
-            "id": 12,
             "name": "Town square",
+            "id": 12,
             "member_ids": [
                 41,
                 23
             ]
         },
         {
-            "id": 13,
             "name": "Amis",
+            "id": 13,
             "member_ids": [
                 42,
                 41
             ]
         },
         {
-            "id": 14,
             "name": "love",
+            "id": 14,
             "member_ids": []
         },
         {
-            "id": 19,
             "name": "rr",
+            "id": 19,
             "member_ids": [
                 44
+            ]
+        },
+        {
+            "name": "aled",
+            "id": 20,
+            "member_ids": [
+                44,
+                45
+            ]
+        },
+        {
+            "name": "help",
+            "id": 22,
+            "member_ids": [
+                46,
+                49,
+                46
+            ]
+        },
+        {
+            "name": "bde",
+            "id": 26,
+            "member_ids": [
+                49,
+                46,
+                50
+            ]
+        },
+        {
+            "name": "amis ",
+            "id": 27,
+            "member_ids": [
+                42,
+                46,
+                52
             ]
         }
     ],
@@ -84,6 +139,27 @@
             "sender_id": 41,
             "channel": 13,
             "content": "'hey'"
+        },
+        {
+            "id": 21,
+            "reception_date": "04/11/25",
+            "sender_id": 43,
+            "channel": 12,
+            "content": "ff"
+        },
+        {
+            "id": 23,
+            "reception_date": "04/11/25",
+            "sender_id": 49,
+            "channel": 22,
+            "content": "ca va les gars"
+        },
+        {
+            "id": 28,
+            "reception_date": "04/11/25",
+            "sender_id": 52,
+            "channel": 27,
+            "content": "peindre"
         }
     ]
 }
