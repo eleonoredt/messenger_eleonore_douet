@@ -22,44 +22,44 @@ class Messages:
 
 with open('servers.json') as f:
     server = json.load(f)
-    user_list:list[User]=[]
+    user_list:list[User] = [] #je cree une liste vide d'elements de type User 
     for user in server['users']: 
-        user_list.append(User(user['name'], user['id']))
-    channel_list:list[Channels]=[]
+        user_list.append(User(user['name'], user['id'])) #j'ajoute les elements 
+    channel_list:list[Channels] = [] #je cree une liste vide d'elements de type Channels 
     for channel in server['channels']:
         channel_list.append(Channels(channel['name'], channel['id'], channel['member_ids']))
-    message_list:list[Messages]=[]
+    message_list:list[Messages] = [] #je cree une liste vide d'elements de type Messages  
     for mess in server['messages']:
         message_list.append(Messages(mess['id'], mess['reception_date'], mess['sender_id'], mess['channel'], mess['content']))
 
-    server['users']=user_list
+    server['users']=user_list #je transforme le dic dcp par ma liste User 
     server['channels']=channel_list
     server['messages']=message_list
 
 
 def sauvegarderjson():  
-    server2 = {}
-    dico_user_list:list[dict]=[]
+    server2 = {} #je cree un dico vide pour pas modifier server
+    dico_user_list:list[dict] = [] #je cree une liste vide d'elements de type dict, je parcours server 
     for user in server['users']: 
         dico_user_list.append({'name': user.name, 'id': user.id})
-    server2['users']= dico_user_list
-    dico_channel_list:list[dict]=[]
+    server2['users'] = dico_user_list #la dcp j'ajouter a server2 
+    dico_channel_list:list[dict] = []
     for channel in server['channels']: 
         dico_channel_list.append({'name': channel.name, 'id': channel.id, 'member_ids': channel.member_ids})
-    server2['channels']= dico_channel_list
-    dico_mess_list:list[dict]=[]
+    server2['channels'] = dico_channel_list
+    dico_mess_list:list[dict] = []
     for mess in server['messages']:
         dico_mess_list.append({ "id": mess.id, "reception_date": mess.reception_date, "sender_id": mess.sender_id, "channel": mess.channel, "content": mess.content})
-    server2['messages']=dico_mess_list
-    with open('servers.json', 'w') as fichier:
+    server2['messages'] = dico_mess_list
+    with open('servers.json', 'w') as fichier: #j'ecris (mode write w) comme d'hab en haut dcp du fichier 
         json.dump(server2, fichier, indent=4)
 
 
 
-ident=[]
-idgp=[]
-idpers=[]
-idhh=[]
+ident = []
+idgp = []
+idpers = []
+idhh = []
 mid = []
 
 
@@ -70,7 +70,7 @@ def get_id_from_name(nom):
             idnom = user.id
             break 
     return idnom
-print(get_id_from_name('Bob'))
+
 def get_name_from_id(user_id):
     nom = None 
     for user in server['users']:
@@ -82,11 +82,11 @@ def get_name_from_id(user_id):
 
 def menu():
     print('=== Messenger ===')
-    print('x. Leave')
-    print('u. Afficher les utilisateurs')
-    print('gp. Afficher les groupes')
-    print('b. Back to the menu')
-    print('ng: Nouveau groupe')
+    print('x : Leave')
+    print('u : Afficher les utilisateurs')
+    print('gp :  Afficher les groupes')
+    print('b : Back to the menu')
+    print('ng : Nouveau groupe')
     print('n : nouvel utilisateur')
     print('m : nouveau message dans un groupe')
     print('d : supprimer un groupe')
@@ -158,10 +158,10 @@ def affichegroupe():
 
 def newgp():
     for user in (server['users']) : 
-        idhh.append(user.id)
+        idhh.append(user.id) #affiche tous les id des users
     newnomgp = input('Donnez le nom du groupe  ')
     for channel in (server['channels']) : 
-        idgp.append(channel.id)
+        idgp.append(channel.id) #liste des id de groupes 
     idgpnew = max(idgp) + 1
     print('Voici la liste des utilisateurs: ')
     users()
@@ -170,15 +170,15 @@ def newgp():
         print('Il n y a pas assez d utilisateurs, refaite un groupe qui fonctionne')
         newgp()
     else: 
-        for i in range (nbpers): 
-            idpersi = int(input('Donner l id des personnes: '))
+        for i in range (nbpers): #je fais apparaitre a chaque fois pour donner l'id
+            idpersi = int(input('Donner l id d\'une personnes: '))
             if idpersi not in (idhh):
                 print('Cet id n existe pas, redonnez un groupe qui marche ')
                 newgp()
             else:
                 idpers.append(idpersi)
-    gpnew = Channels(newnomgp, idgpnew, idpers )
-    server['channels'].append(gpnew)
+    gpnew = Channels(newnomgp, idgpnew, idpers ) #je cree nouveau groupe
+    server['channels'].append(gpnew) #je l'ajoute a json
     sauvegarderjson()
 
 def suppgp(): 
@@ -242,7 +242,7 @@ def newmessage():
                 if senderid in channel.member_ids: 
                     print(channel.id)
                     for id_membre in channel.member_ids:
-                        id_membres=get_name_from_id(id_membre)
+                        id_membres = get_name_from_id(id_membre)
                         print(id_membres)
             #cavousva = input('Un des groupe vous convient ? si oui on continue sinon tapez nn')
         # if cavousva == 'nn' : 
@@ -258,4 +258,3 @@ def newmessage():
     
 
 menu()
-
