@@ -14,6 +14,8 @@ class Channels:
             self.name = name
             self.id = id
             self.member_ids = member_ids
+    def __repr__(self) -> str:
+        return f'Channel(name={self.name})'
 
 class Messages: 
     def __init__(self, id: int, reception_date: str,sender_id: int,channel: int,content: str):
@@ -37,9 +39,20 @@ class RemoteStorage:
         nom_dict = {'name': nomnew}
         envoie = requests.post('https://groupe5-python-mines.fr/users/create', json = nom_dict)
         print(envoie.status_code, envoie.text)
+    def get_group(self):
+        responsegp = requests.get('https://groupe5-python-mines.fr/channels')
+        responsegp_dict=json.loads(responsegp.text)
+        repgp_list:list[Channels]=[]
+        for channel in responsegp_dict:
+            membersid = requests.get(f'https://groupe5-python-mines.fr/channels/{channel['id']}/members')
+            membersid_dict = json.loads(membersid) #pb ICI
+            repgp_list.append(Channels(channel['name'], channel['id'], membersid_dict))
+        return repgp_list
+
 
 storage = RemoteStorage()
 web_users = storage.get_users()     
+print(storage.get_group())
 
 
 
