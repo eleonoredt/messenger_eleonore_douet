@@ -45,14 +45,27 @@ class RemoteStorage:
         repgp_list:list[Channels]=[]
         for channel in responsegp_dict:
             membersid = requests.get(f'https://groupe5-python-mines.fr/channels/{channel['id']}/members')
-            membersid_dict = json.loads(membersid) #pb ICI
-            repgp_list.append(Channels(channel['name'], channel['id'], membersid_dict))
+            #membersid_dict = json.loads(membersid) #pb ICI
+            repgp_list.append(Channels(channel['name'], channel['id'], membersid))
         return repgp_list
+    def create_group(self, nomnewgp: str)->int: 
+        nom_gp_dict = {'name': nomnewgp}
+        envoie = requests.post('https://groupe5-python-mines.fr/channels/create', json = nom_gp_dict)
+        return envoie.json()['id']
+    def join_group(self, idgp, members_id):
+        members_id_dict = {'user_id': members_id}
+        envoie = requests.post(f'https://groupe5-python-mines.fr/channels/{idgp}/join', json = members_id_dict)
+        print(envoie.status_code, envoie.text)
+    def create_message(self, idgp, id_sender, content: str):
+        message_dict = {'sender_id': id_sender, 'content': content}
+        envoie = requests.post(f'https://groupe5-python-mines.fr/channels/{idgp}/messages/post', json = (message_dict))
+        print(envoie.status_code, envoie.text)
 
 
 storage = RemoteStorage()
 web_users = storage.get_users()     
-print(storage.get_group())
+web_channels = storage.get_group()
+
 
 
 
@@ -101,7 +114,7 @@ mid = []
 
 def get_id_from_name(nom):
     idnom = None 
-    for user in server['users']:
+    for user in web_users:
         if nom == user.name:
             idnom = user.id
             break 
@@ -109,7 +122,7 @@ def get_id_from_name(nom):
 
 def get_name_from_id(user_id):
     nom = None 
-    for user in server['users']:
+    for user in web_users:
         if user.id == user_id:
             nom = user.name
             break  
@@ -127,6 +140,7 @@ def menu():
     print('m : nouveau message dans un groupe')
     print('d : supprimer un groupe')
     print('dm : supprimer un message')
+    print('aj : ajouter des utilisateurs à un groupe existant')
     choice = input('Select an option: ')  
     if choice == 'x':
         print('Bye!')
@@ -164,6 +178,8 @@ def menu():
         suppgp()
     elif choice == 'dm':
         supp_message()
+    elif choice == 'aj':
+        newpeople()
     else:
         print('Unknown option:', choice)
 
@@ -178,7 +194,7 @@ def newuser():
     storage.create_user(nomnew)
 
 def groupe():
-    for channel in (server['channels']) :
+    for channel in (web_channels) :
         groupe = str(channel.id) + '. ' + channel.name
         print(groupe)
 
@@ -188,12 +204,10 @@ def affichegroupe():
         print(message)
 
 def newgp():
+    newnomgp = input('Donnez le nom du groupe  ')
+    a = storage.create_group(newnomgp)
     for user in (web_users) : 
         idhh.append(user.id) #affiche tous les id des users
-    newnomgp = input('Donnez le nom du groupe  ')
-    for channel in (server['channels']) : 
-        idgp.append(channel.id) #liste des id de groupes 
-    idgpnew = max(idgp) + 1
     print('Voici la liste des utilisateurs: ')
     users()
     nbpers = int(input('Combien d utilisateurs souhaitez vous ajouter? '))
@@ -207,10 +221,28 @@ def newgp():
                 print('Cet id n existe pas, redonnez un groupe qui marche ')
                 newgp()
             else:
-                idpers.append(idpersi)
-    gpnew = Channels(newnomgp, idgpnew, idpers ) #je cree nouveau groupe
-    server['channels'].append(gpnew) #je l'ajoute a json
-    sauvegarderjson()
+                storage.join_group(a ,idpersi)
+
+def newpeople(): 
+    print('Voici la liste des groupes: ')
+    affichegroupe()
+    id_group= input('a quel groupe vouslez vous ajoutez des utilisateurs?')
+    for user in (web_users) : 
+        idhh.append(user.id) #affiche tous les id des users
+    print('Voici la liste des utilisateurs: ')
+    users()
+    nbpers = int(input('Combien d utilisateurs souhaitez vous ajouter? '))
+    if nbpers>len(web_users): 
+        print('Il n y a pas assez d utilisateurs, refaite un groupe qui fonctionne')
+        newgp()
+    else: 
+        for i in range (nbpers): #je fais apparaitre a chaque fois pour donner l'id
+            idpersi = int(input('Donner l id d\'une personnes: '))
+            if idpersi not in (idhh):
+                print('Cet id n existe pas, redonnez un groupe qui marche ')
+                newgp()
+            else:
+                storage.join_group(id_group ,idpersi)
 
 def suppgp(): 
     gpid = int(input('Donner l id du gp que vous voulez sup '))
@@ -247,14 +279,17 @@ def newmessage():
     list_user = []
     for user in web_users:
         list_user.append(user.name)
+    print(list_user)
     if sendername not in list_user : 
         print('Votre nom n \'existe pas ')
         choix = input('Voulez vous créer un nouvel utilisateur ? Si oui tapez n si vous souhaitez changer de nom tapez j ')
         if choix == 'n': 
             newuser()
             newmessage()
-        else : 
+        elif choix== 'j' : 
             newmessage()
+        else: 
+            menu()
     else : 
         senderid = int(get_id_from_name(sendername))
         list_member_ids = []
@@ -278,13 +313,9 @@ def newmessage():
             #cavousva = input('Un des groupe vous convient ? si oui on continue sinon tapez nn')
         # if cavousva == 'nn' : 
             #    newgp()
-            gp = int(input('Donner l \'indentifiant du groupe '))
+            idgp = int(input('Donner l \'indentifiant du groupe '))
             texto = input('Ecrivez votre messsage : ')
-            for channel in (server['channels']) : 
-                mid.append(channel.id)
-            newmid =  max(mid) + 1
-            newmess = Messages( newmid, "04/11/25", senderid,  gp, texto)
-            server['messages'].append(newmess)
+            storage.create_message(idgp, senderid, texto)
             sauvegarderjson()
     
 
