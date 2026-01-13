@@ -44,8 +44,10 @@ class RemoteStorage:
         responsegp_dict=json.loads(responsegp.text)
         repgp_list:list[Channels]=[]
         for channel in responsegp_dict:
-            membersid = requests.get(f'https://groupe5-python-mines.fr/channels/{channel['id']}/members')
+            members = requests.get(f'https://groupe5-python-mines.fr/channels/{channel['id']}/members')
             #membersid_dict = json.loads(membersid) #pb ICI
+            members_list= members.json()
+            membersid = [m['id'] for m in members_list]
             repgp_list.append(Channels(channel['name'], channel['id'], membersid))
         return repgp_list
     def create_group(self, nomnewgp: str)->int: 
@@ -56,6 +58,15 @@ class RemoteStorage:
         members_id_dict = {'user_id': members_id}
         envoie = requests.post(f'https://groupe5-python-mines.fr/channels/{idgp}/join', json = members_id_dict)
         print(envoie.status_code, envoie.text)
+    def get_messages(self):
+        response_mess = requests.get('https://groupe5-python-mines.fr/messages')
+        response_mess_text = response_mess.text
+        response_dict=json.loads(response_mess_text)
+        print(response_dict)
+        rep_mess_list:list[Messages]=[]
+        for message in response_dict:
+            rep_mess_list.append(Messages(message['id'], message['reception_date'], message['sender_id'],message['channel_id'],message['content']))
+        return rep_mess_list
     def create_message(self, idgp, id_sender, content: str):
         message_dict = {'sender_id': id_sender, 'content': content}
         envoie = requests.post(f'https://groupe5-python-mines.fr/channels/{idgp}/messages/post', json = (message_dict))
@@ -65,7 +76,7 @@ class RemoteStorage:
 storage = RemoteStorage()
 web_users = storage.get_users()     
 web_channels = storage.get_group()
-
+web_messages = storage.get_messages()
 
 
 
@@ -137,9 +148,8 @@ def menu():
     print('b : Back to the menu')
     print('ng : Nouveau groupe')
     print('n : nouvel utilisateur')
-    print('m : nouveau message dans un groupe')
-    print('d : supprimer un groupe')
-    print('dm : supprimer un message')
+    print('m: afficher les messages')
+    print('nm : nouveau message dans un groupe')
     print('aj : ajouter des utilisateurs à un groupe existant')
     choice = input('Select an option: ')  
     if choice == 'x':
@@ -165,9 +175,10 @@ def menu():
             newgp()
         else :
             menu()
-    elif choice == 'm':
+    elif choice == 'nm':
         newmessage()
-        
+    elif choice== 'm':
+        affichemessages()
     elif choice == 'b':
         menu()
     elif choice == 'ng':
@@ -201,6 +212,11 @@ def groupe():
 def affichegroupe():
     for mess in server['messages']:
         message = 'The sender id is ' + str(mess.sender_id)+ '. They said: ' + mess.content
+        print(message)
+    
+def affichemessages():
+    for message in (web_messages):
+        message = 'The sender id is ' + str(message.sender_id)+ ' They said ' + message.content
         print(message)
 
 def newgp():
@@ -279,7 +295,6 @@ def newmessage():
     list_user = []
     for user in web_users:
         list_user.append(user.name)
-    print(list_user)
     if sendername not in list_user : 
         print('Votre nom n \'existe pas ')
         choix = input('Voulez vous créer un nouvel utilisateur ? Si oui tapez n si vous souhaitez changer de nom tapez j ')
@@ -293,9 +308,10 @@ def newmessage():
     else : 
         senderid = int(get_id_from_name(sendername))
         list_member_ids = []
-        for channel in server['channels']:
+        for channel in web_channels:
             list_member_ids += channel.member_ids
         if senderid not in list_member_ids : 
+            print(senderid)
             choix2 = input('Vous n\'etes dans aucun groupe, si vous souhaitez créer un groupe tapez ng sinon partez et x ')
             if choix2 == 'ng': 
                 newgp()
@@ -304,7 +320,7 @@ def newmessage():
                 print('Bye')
         else: 
             print('voici les groupes ou vous etes:')
-            for channel in (server['channels']): 
+            for channel in (web_channels): 
                 if senderid in channel.member_ids: 
                     print(channel.id)
                     for id_membre in channel.member_ids:
