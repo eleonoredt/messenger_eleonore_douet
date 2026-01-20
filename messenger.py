@@ -1,6 +1,7 @@
 from datetime import datetime
 import json
 import requests
+import argparse
 
 
 
@@ -76,309 +77,295 @@ class RemoteStorage:
 
 
 class LocalStorage:
+    def __init__(self, chemin):
+            self.chemin = chemin
+
     def load_server(self):
-        with open('servers.json') as f:
+        with open(self.chemin) as f:
             server = json.load(f)
+            user_list:list[User] = [] #je cree une liste vide d'elements de type User 
+            for user in server['users']: 
+                user_list.append(User(user['name'], user['id'])) #j'ajoute les elements 
+            channel_list:list[Channels] = [] #je cree une liste vide d'elements de type Channels 
+            for channel in server['channels']:
+                channel_list.append(Channels(channel['name'], channel['id'], channel['member_ids']))
+            message_list:list[Messages] = [] #je cree une liste vide d'elements de type Messages  
+            for mess in server['messages']:
+                message_list.append(Messages(mess['id'], mess['reception_date'], mess['sender_id'], mess['channel'], mess['content']))
+        server['users']=user_list #je transforme le dic dcp par ma liste User 
+        server['channels']=channel_list
+        server['messages']=message_list
         return server
+    
+    def save_server(self, server):  
+        server2 = {} #je cree un dico vide pour pas modifier server
+        dico_user_list:list[dict] = [] #je cree une liste vide d'elements de type dict, je parcours server 
+        for user in server['users']: 
+            dico_user_list.append({'name': user.name, 'id': user.id})
+        server2['users'] = dico_user_list #la dcp j'ajouter a server2 
+        dico_channel_list:list[dict] = []
+        for channel in server['channels']: 
+            dico_channel_list.append({'name': channel.name, 'id': channel.id, 'member_ids': channel.member_ids})
+        server2['channels'] = dico_channel_list
+        dico_mess_list:list[dict] = []
+        for mess in server['messages']:
+            dico_mess_list.append({ "id": mess.id, "reception_date": mess.reception_date, "sender_id": mess.sender_id, "channel": mess.channel, "content": mess.content})
+        server2['messages'] = dico_mess_list
+        with open(self.chemin, 'w') as fichier: #j'ecris (mode write w) comme d'hab en haut dcp du fichier 
+            json.dump(server2, fichier, indent=4)
+
     def get_users(self):
         server = self.load_server()
         users_list:list[User]=[]
         for user in (server['users']) : 
-            users_list.append(User(user['name'], user['id']))
+            users_list.append(user)
         return users_list
+    
     def create_user(self, nomnew):
+        server = self.load_server()
+        ident = []
         for user in (server['users']) : 
             ident.append(user.id)
         newid = max(ident) + 1
         newuser = User(nomnew, newid)
         server['users'].append(newuser)
-        sauvegarderjson()
+        self.save_server(server)
+
     def get_group(self):
-        self.load_server()
+        server = self.load_server()
         channel_list:list[Channels] = [] #je cree une liste vide d'elements de type Channels 
         for channel in server['channels']:
-            channel_list.append(Channels(channel['name'], channel['id'], channel['member_ids']))
+            channel_list.append(Channels(channel.name, channel.id, channel.member_ids))
         return channel_list
+    
     def create_group(self, nomnewgp: str)->int:
-        for channel in (server['channels']) : 
-            idgp.append(channel.id) #liste des id de groupes 
+        idgp = []
+        server = self.load_server()
+        for chan in (server['channels']) : 
+            idgp.append(chan.id) #liste des id de groupes 
         idgpnew = max(idgp) + 1
-        sauvegarderjson()
+        gpnew = Channels(nomnewgp, idgpnew, [] ) #je cree nouveau groupe
+        server['channels'].append(gpnew) #je l'ajoute a json
+        self.save_server(server)
         return idgpnew
+    
     def join_group(self, idgp, members_id): #c elle vrmt qui va download
+        server = self.load_server()
         idpers = []
         for ids in members_id:
             idpers.append(ids)
-        for channel in LocalStorage.get_channels():
+        for channel in server['channels']:
             if channel.id == idgp:
-                nom = channel.name
-                break 
-        gpnew = Channels(nom, idgp, idpers ) #je cree nouveau groupe
+                nomgp = channel.name 
+        gpnew = Channels(nomgp, idgp, idpers ) #je cree nouveau groupe
         server['channels'].append(gpnew) #je l'ajoute a json
-        sauvegarderjson()
+        self.save_server(server)
 
 
-storage = LocalStorage()
-#web_users = storage.get_users()     
-#web_channels = storage.get_group()
-#web_messages = storage.get_messages()
+storage = LocalStorage('server.json')
 
-print(storage.get_users())
-
-with open('servers.json') as f:
-    server = json.load(f)
-    user_list:list[User] = [] #je cree une liste vide d'elements de type User 
-    for user in server['users']: 
-        user_list.append(User(user['name'], user['id'])) #j'ajoute les elements 
-    channel_list:list[Channels] = [] #je cree une liste vide d'elements de type Channels 
-    for channel in server['channels']:
-        channel_list.append(Channels(channel['name'], channel['id'], channel['member_ids']))
-    message_list:list[Messages] = [] #je cree une liste vide d'elements de type Messages  
-    for mess in server['messages']:
-        message_list.append(Messages(mess['id'], mess['reception_date'], mess['sender_id'], mess['channel'], mess['content']))
-
-    server['users']=user_list #je transforme le dic dcp par ma liste User 
-    server['channels']=channel_list
-    server['messages']=message_list
-
-
-def sauvegarderjson():  
-    server2 = {} #je cree un dico vide pour pas modifier server
-    dico_user_list:list[dict] = [] #je cree une liste vide d'elements de type dict, je parcours server 
-    for user in server['users']: 
-        dico_user_list.append({'name': user.name, 'id': user.id})
-    server2['users'] = dico_user_list #la dcp j'ajouter a server2 
-    dico_channel_list:list[dict] = []
-    for channel in server['channels']: 
-        dico_channel_list.append({'name': channel.name, 'id': channel.id, 'member_ids': channel.member_ids})
-    server2['channels'] = dico_channel_list
-    dico_mess_list:list[dict] = []
-    for mess in server['messages']:
-        dico_mess_list.append({ "id": mess.id, "reception_date": mess.reception_date, "sender_id": mess.sender_id, "channel": mess.channel, "content": mess.content})
-    server2['messages'] = dico_mess_list
-    with open('servers.json', 'w') as fichier: #j'ecris (mode write w) comme d'hab en haut dcp du fichier 
-        json.dump(server2, fichier, indent=4)
-
-
-
-ident = []
-idgp = []
-idpers = []
-idhh = []
-mid = []
-
-
-def get_id_from_name(nom):
-    idnom = None 
-    for user in storage.get_users():
-        if nom == user.name:
-            idnom = user.id
-            break 
-    return idnom
-
-def get_name_from_id(user_id):
-    nom = None 
-    for user in storage.get_users():
-        if user.id == user_id:
-            nom = user.name
-            break  
-    return nom
+parser = argparse.ArgumentParser(
+                    prog='ProgramName',
+                    description='le programme permet de créer des utilisitateurs et des groupes pour ensuite pouvoir envoyer des messages'
+                    )
+args = parser.parse_args()
+parser.add_argument('--storage-file', type=str, help="Chemin vers le fichier JSON de stockage (ex: server-data.json)")
 
 #if response.status_code = 2 : #Inferieur ou egal a 300
 #response.raise_for_status()
 
-def menu():
-    print('=== Messenger ===')
-    print('x : Leave')
-    print('u : Afficher les utilisateurs')
-    print('gp :  Afficher les groupes')
-    print('b : Back to the menu')
-    print('ng : Nouveau groupe')
-    print('n : nouvel utilisateur')
-    print('m: afficher les messages')
-    print('nm : nouveau message dans un groupe')
-    print('aj : ajouter des utilisateurs à un groupe existant')
-    choice = input('Select an option: ')  
-    if choice == 'x':
-        print('Bye!')
-    elif choice == 'u':
-        users()
-        choice3 = input('b : go back to menu, n: create new user ')
-        if choice3 == 'b': 
+class UserInterface: 
+    def menu():
+        print('=== Messenger ===')
+        print('x : Leave')
+        print('u : Afficher les utilisateurs')
+        print('gp :  Afficher les groupes')
+        print('b : Back to the menu')
+        print('ng : Nouveau groupe')
+        print('n : nouvel utilisateur')
+        print('m: afficher les messages')
+        print('nm : nouveau message dans un groupe')
+        print('aj : ajouter des utilisateurs à un groupe existant')
+        choice = input('Select an option: ')  
+        if choice == 'x':
+            print('Bye!')
+        elif choice == 'u':
+            users()
+            choice3 = input('b : go back to menu, n: create new user ')
+            if choice3 == 'b': 
+                menu()
+            elif choice3 == 'n': 
+                newuser()
+        elif choice == 'gp':
+            groupe()
+            choice2 = int(input('Select a group by its id: '))
+            for channel in (server['channels']) :
+                if choice2 == channel.id:
+                    affichegroupe() 
+                break 
+            else: 
+                print('No group')
+            choicegp = input('Voulez vous creer un nouveau groupe? si oui tapez ng sinon tapez b pour revenir ')
+            if choicegp == 'ng':
+                newgp()
+            else :
+                menu()
+        elif choice == 'nm':
+            newmessage()
+        elif choice== 'm':
+            affichemessages()
+        elif choice == 'b':
             menu()
-        elif choice3 == 'n': 
-            newuser()
-    elif choice == 'gp':
-        groupe()
-        choice2 = int(input('Select a group by its id: '))
-        for channel in (server['channels']) :
-            if choice2 == channel.id:
-                affichegroupe() 
-            break 
-        else: 
-            print('No group')
-        choicegp = input('Voulez vous creer un nouveau groupe? si oui tapez ng sinon tapez b pour revenir ')
-        if choicegp == 'ng':
+        elif choice == 'ng':
             newgp()
-        else :
-            menu()
-    elif choice == 'nm':
-        newmessage()
-    elif choice== 'm':
-        affichemessages()
-    elif choice == 'b':
-        menu()
-    elif choice == 'ng':
-        newgp()
-    elif choice == 'n':
-        newuser()
-    elif choice == 'd':
-        suppgp()
-    elif choice == 'dm':
-        supp_message()
-    elif choice == 'aj':
-        newpeople()
-    else:
-        print('Unknown option:', choice)
-
-def users():
-    print('Les utilisitateurs sont: ')
-    for user in (storage.get_users()) : 
-        nomid = str(user.id) + '. ' + user.name #nomid=f"{user['id']}. {user['name']}
-        print(nomid)
-
-def newuser():
-    nomnew = input('Donner le nom du nouvel utilisateur ')
-    storage.create_user(nomnew)
-
-def groupe():
-    for channel in (storage.get_group()) :
-        groupe = str(channel.id) + '. ' + channel.name
-        print(groupe)
-
-"""def affichegroupe():
-    for mess in server['messages']:
-        message = 'The sender id is ' + str(mess.sender_id)+ '. They said: ' + mess.content
-        print(message)"""
-    
-def affichemessages():
-    for message in (storage.get_messages()):
-        message = 'The sender id is ' + str(message.sender_id)+ ' They said ' + message.content
-        print(message)
-
-def newgp():
-    newnomgp = input('Donnez le nom du groupe  ')
-    a = storage.create_group(newnomgp)
-    for user in (storage.get_users()) : 
-        idhh.append(user.id) #affiche tous les id des users
-    print('Voici la liste des utilisateurs: ')
-    users()
-    nbpers = int(input('Combien d utilisateurs souhaitez vous ajouter? '))
-    if nbpers>len(storage.get_users()): 
-        print('Il n y a pas assez d utilisateurs, refaite un groupe qui fonctionne')
-        newgp()
-    else: 
-        for i in range (nbpers): #je fais apparaitre a chaque fois pour donner l'id
-            idpersi = int(input('Donner l id d\'une personnes: '))
-            if idpersi not in (idhh):
-                print('Cet id n existe pas, redonnez un groupe qui marche ')
-                newgp()
-            else:
-                storage.join_group(a ,idpersi)
-
-def newpeople(): 
-    print('Voici la liste des groupes: ')
-    affichegroupe()
-    id_group= input('a quel groupe vouslez vous ajoutez des utilisateurs?')
-    for user in (storage.get_users()) : 
-        idhh.append(user.id) #affiche tous les id des users
-    print('Voici la liste des utilisateurs: ')
-    users()
-    nbpers = int(input('Combien d utilisateurs souhaitez vous ajouter? '))
-    if nbpers>len(storage.get_users()): 
-        print('Il n y a pas assez d utilisateurs, refaite un groupe qui fonctionne')
-        newgp()
-    else: 
-        for i in range (nbpers): #je fais apparaitre a chaque fois pour donner l'id
-            idpersi = int(input('Donner l id d\'une personnes: '))
-            if idpersi not in (idhh):
-                print('Cet id n existe pas, redonnez un groupe qui marche ')
-                newgp()
-            else:
-                storage.join_group(id_group ,idpersi)
-
-def suppgp(): 
-    gpid = int(input('Donner l id du gp que vous voulez sup '))
-    initial_length = len(server['channels'])
-    server['channels'] = [
-        channel for channel in server['channels'] 
-        if channel.id != gpid
-    ]
-    final_length = len(server['channels'])
-    if final_length < initial_length:
-        sauvegarderjson()
-        print("Groupe supprimé et le fichier a été sauvegardé.")
-    else:
-        print(" Erreur : Aucun groupe trouvé avec l ID.")
-
-def supp_message(): 
-    messid = int(input('Donner l id du message que vous voulez sup '))
-    initial_length = len(server['messages'])
-    server['messages'] = [
-        mess for mess in server['messages'] 
-        if mess.id != messid
-    ]
-    final_length = len(server['messages'])
-    if final_length < initial_length:
-        sauvegarderjson()
-        print("Message supprimé et le fichier a été sauvegardé.")
-    else:
-        print(" Erreur : Aucun message trouvé avec l ID.")
-
-
-def newmessage():
-    #check il est dans groupe et new mesage 
-    sendername = input('Quel est votre nom ')
-    list_user = []
-    for user in storage.get_users():
-        list_user.append(user.name)
-    if sendername not in list_user : 
-        print('Votre nom n \'existe pas ')
-        choix = input('Voulez vous créer un nouvel utilisateur ? Si oui tapez n si vous souhaitez changer de nom tapez j ')
-        if choix == 'n': 
+        elif choice == 'n':
             newuser()
-            newmessage()
-        elif choix== 'j' : 
-            newmessage()
+        elif choice == 'd':
+            suppgp()
+        elif choice == 'dm':
+            supp_message()
+        elif choice == 'aj':
+            newpeople()
+        else:
+            print('Unknown option:', choice)
+
+    def users():
+        print('Les utilisitateurs sont: ')
+        for user in (storage.get_users()) : 
+            nomid = str(user.id) + '. ' + user.name #nomid=f"{user['id']}. {user['name']}
+            print(nomid)
+
+    def newuser():
+        nomnew = input('Donner le nom du nouvel utilisateur ')
+        storage.create_user(nomnew)
+
+    def groupe():
+        for channel in (storage.get_group()) :
+            groupe = str(channel.id) + '. ' + channel.name
+            print(groupe)
+
+    """def affichegroupe():
+        for mess in server['messages']:
+            message = 'The sender id is ' + str(mess.sender_id)+ '. They said: ' + mess.content
+            print(message)"""
+        
+    def affichemessages():
+        for message in (storage.get_messages()):
+            message = 'The sender id is ' + str(message.sender_id)+ ' They said ' + message.content
+            print(message)
+
+    def newgp():
+        newnomgp = input('Donnez le nom du groupe  ')
+        a = storage.create_group(newnomgp)
+        for user in (storage.get_users()) : 
+            idhh.append(user.id) #affiche tous les id des users
+        print('Voici la liste des utilisateurs: ')
+        users()
+        nbpers = int(input('Combien d utilisateurs souhaitez vous ajouter? '))
+        if nbpers>len(storage.get_users()): 
+            print('Il n y a pas assez d utilisateurs, refaite un groupe qui fonctionne')
+            newgp()
         else: 
-            menu()
-    else : 
-        senderid = int(get_id_from_name(sendername))
-        list_member_ids = []
-        for channel in storage.get_group():
-            list_member_ids += channel.member_ids
-        if senderid not in list_member_ids : 
-            print(senderid)
-            choix2 = input('Vous n\'etes dans aucun groupe, si vous souhaitez créer un groupe tapez ng sinon partez et x ')
-            if choix2 == 'ng': 
-                newgp()
-                newmessage()
-            else : 
-                print('Bye')
+            for i in range (nbpers): #je fais apparaitre a chaque fois pour donner l'id
+                idpersi = int(input('Donner l id d\'une personnes: '))
+                if idpersi not in (idhh):
+                    print('Cet id n existe pas, redonnez un groupe qui marche ')
+                    newgp()
+                else:
+                    storage.join_group(a ,idpersi)
+
+    def newpeople(): 
+        print('Voici la liste des groupes: ')
+        affichegroupe()
+        id_group= input('a quel groupe vouslez vous ajoutez des utilisateurs?')
+        for user in (storage.get_users()) : 
+            idhh.append(user.id) #affiche tous les id des users
+        print('Voici la liste des utilisateurs: ')
+        users()
+        nbpers = int(input('Combien d utilisateurs souhaitez vous ajouter? '))
+        if nbpers>len(storage.get_users()): 
+            print('Il n y a pas assez d utilisateurs, refaite un groupe qui fonctionne')
+            newgp()
         else: 
-            print('voici les groupes ou vous etes:')
-            for channel in (storage.get_group()): 
-                if senderid in channel.member_ids: 
-                    print(channel.id)
-                    for id_membre in channel.member_ids:
-                        id_membres = get_name_from_id(id_membre)
-                        print(id_membres)
-            #cavousva = input('Un des groupe vous convient ? si oui on continue sinon tapez nn')
-        # if cavousva == 'nn' : 
-            #    newgp()
-            idgp = int(input('Donner l \'indentifiant du groupe '))
-            texto = input('Ecrivez votre messsage : ')
-            storage.create_message(idgp, senderid, texto)
+            for i in range (nbpers): #je fais apparaitre a chaque fois pour donner l'id
+                idpersi = int(input('Donner l id d\'une personnes: '))
+                if idpersi not in (idhh):
+                    print('Cet id n existe pas, redonnez un groupe qui marche ')
+                    newgp()
+                else:
+                    storage.join_group(id_group ,idpersi)
+
+    def suppgp(): 
+        gpid = int(input('Donner l id du gp que vous voulez sup '))
+        initial_length = len(server['channels'])
+        server['channels'] = [
+            channel for channel in server['channels'] 
+            if channel.id != gpid
+        ]
+        final_length = len(server['channels'])
+        if final_length < initial_length:
             sauvegarderjson()
-menu()
+            print("Groupe supprimé et le fichier a été sauvegardé.")
+        else:
+            print(" Erreur : Aucun groupe trouvé avec l ID.")
+
+    def supp_message(): 
+        messid = int(input('Donner l id du message que vous voulez sup '))
+        initial_length = len(server['messages'])
+        server['messages'] = [
+            mess for mess in server['messages'] 
+            if mess.id != messid
+        ]
+        final_length = len(server['messages'])
+        if final_length < initial_length:
+            sauvegarderjson()
+            print("Message supprimé et le fichier a été sauvegardé.")
+        else:
+            print(" Erreur : Aucun message trouvé avec l ID.")
+
+
+    def newmessage():
+        #check il est dans groupe et new mesage 
+        sendername = input('Quel est votre nom ')
+        list_user = []
+        for user in storage.get_users():
+            list_user.append(user.name)
+        if sendername not in list_user : 
+            print('Votre nom n \'existe pas ')
+            choix = input('Voulez vous créer un nouvel utilisateur ? Si oui tapez n si vous souhaitez changer de nom tapez j ')
+            if choix == 'n': 
+                newuser()
+                newmessage()
+            elif choix== 'j' : 
+                newmessage()
+            else: 
+                menu()
+        else : 
+            senderid = int(get_id_from_name(sendername))
+            list_member_ids = []
+            for channel in storage.get_group():
+                list_member_ids += channel.member_ids
+            if senderid not in list_member_ids : 
+                print(senderid)
+                choix2 = input('Vous n\'etes dans aucun groupe, si vous souhaitez créer un groupe tapez ng sinon partez et x ')
+                if choix2 == 'ng': 
+                    newgp()
+                    newmessage()
+                else : 
+                    print('Bye')
+            else: 
+                print('voici les groupes ou vous etes:')
+                for channel in (storage.get_group()): 
+                    if senderid in channel.member_ids: 
+                        print(channel.id)
+                        for id_membre in channel.member_ids:
+                            id_membres = get_name_from_id(id_membre)
+                            print(id_membres)
+                #cavousva = input('Un des groupe vous convient ? si oui on continue sinon tapez nn')
+            # if cavousva == 'nn' : 
+                #    newgp()
+                idgp = int(input('Donner l \'indentifiant du groupe '))
+                texto = input('Ecrivez votre messsage : ')
+                storage.create_message(idgp, senderid, texto)
+                
 
