@@ -79,8 +79,9 @@ class LocalStorage:
     def load_server(self):
         with open('servers.json') as f:
             server = json.load(f)
-
+        return server
     def get_users(self):
+        server = self.load_server()
         users_list:list[User]=[]
         for user in (server['users']) : 
             users_list.append(User(user['name'], user['id']))
@@ -93,6 +94,7 @@ class LocalStorage:
         server['users'].append(newuser)
         sauvegarderjson()
     def get_group(self):
+        self.load_server()
         channel_list:list[Channels] = [] #je cree une liste vide d'elements de type Channels 
         for channel in server['channels']:
             channel_list.append(Channels(channel['name'], channel['id'], channel['member_ids']))
@@ -116,15 +118,12 @@ class LocalStorage:
         sauvegarderjson()
 
 
-
-
-
-storage = RemoteStorage()
+storage = LocalStorage()
 #web_users = storage.get_users()     
 #web_channels = storage.get_group()
 #web_messages = storage.get_messages()
 
-
+print(storage.get_users())
 
 with open('servers.json') as f:
     server = json.load(f)
@@ -381,5 +380,5 @@ def newmessage():
             texto = input('Ecrivez votre messsage : ')
             storage.create_message(idgp, senderid, texto)
             sauvegarderjson()
-    
+menu()
 
