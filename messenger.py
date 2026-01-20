@@ -2,6 +2,8 @@ from datetime import datetime
 import json
 import requests
 
+
+
 class User:
     def __init__(self, name: str, id: int):
             self.name = name
@@ -73,10 +75,54 @@ class RemoteStorage:
         print(envoie.status_code, envoie.text)
 
 
+class LocalStorage:
+    def load_server(self):
+        with open('servers.json') as f:
+            server = json.load(f)
+
+    def get_users(self):
+        users_list:list[User]=[]
+        for user in (server['users']) : 
+            users_list.append(User(user['name'], user['id']))
+        return users_list
+    def create_user(self, nomnew):
+        for user in (server['users']) : 
+            ident.append(user.id)
+        newid = max(ident) + 1
+        newuser = User(nomnew, newid)
+        server['users'].append(newuser)
+        sauvegarderjson()
+    def get_group(self):
+        channel_list:list[Channels] = [] #je cree une liste vide d'elements de type Channels 
+        for channel in server['channels']:
+            channel_list.append(Channels(channel['name'], channel['id'], channel['member_ids']))
+        return channel_list
+    def create_group(self, nomnewgp: str)->int:
+        for channel in (server['channels']) : 
+            idgp.append(channel.id) #liste des id de groupes 
+        idgpnew = max(idgp) + 1
+        sauvegarderjson()
+        return idgpnew
+    def join_group(self, idgp, members_id): #c elle vrmt qui va download
+        idpers = []
+        for ids in members_id:
+            idpers.append(ids)
+        for channel in LocalStorage.get_channels():
+            if channel.id == idgp:
+                nom = channel.name
+                break 
+        gpnew = Channels(nom, idgp, idpers ) #je cree nouveau groupe
+        server['channels'].append(gpnew) #je l'ajoute a json
+        sauvegarderjson()
+
+
+
+
+
 storage = RemoteStorage()
-web_users = storage.get_users()     
-web_channels = storage.get_group()
-web_messages = storage.get_messages()
+#web_users = storage.get_users()     
+#web_channels = storage.get_group()
+#web_messages = storage.get_messages()
 
 
 
@@ -125,7 +171,7 @@ mid = []
 
 def get_id_from_name(nom):
     idnom = None 
-    for user in web_users:
+    for user in storage.get_users():
         if nom == user.name:
             idnom = user.id
             break 
@@ -133,12 +179,14 @@ def get_id_from_name(nom):
 
 def get_name_from_id(user_id):
     nom = None 
-    for user in web_users:
+    for user in storage.get_users():
         if user.id == user_id:
             nom = user.name
             break  
     return nom
 
+#if response.status_code = 2 : #Inferieur ou egal a 300
+#response.raise_for_status()
 
 def menu():
     print('=== Messenger ===')
@@ -196,7 +244,7 @@ def menu():
 
 def users():
     print('Les utilisitateurs sont: ')
-    for user in (web_users) : 
+    for user in (storage.get_users()) : 
         nomid = str(user.id) + '. ' + user.name #nomid=f"{user['id']}. {user['name']}
         print(nomid)
 
@@ -205,29 +253,29 @@ def newuser():
     storage.create_user(nomnew)
 
 def groupe():
-    for channel in (web_channels) :
+    for channel in (storage.get_group()) :
         groupe = str(channel.id) + '. ' + channel.name
         print(groupe)
 
-def affichegroupe():
+"""def affichegroupe():
     for mess in server['messages']:
         message = 'The sender id is ' + str(mess.sender_id)+ '. They said: ' + mess.content
-        print(message)
+        print(message)"""
     
 def affichemessages():
-    for message in (web_messages):
+    for message in (storage.get_messages()):
         message = 'The sender id is ' + str(message.sender_id)+ ' They said ' + message.content
         print(message)
 
 def newgp():
     newnomgp = input('Donnez le nom du groupe  ')
     a = storage.create_group(newnomgp)
-    for user in (web_users) : 
+    for user in (storage.get_users()) : 
         idhh.append(user.id) #affiche tous les id des users
     print('Voici la liste des utilisateurs: ')
     users()
     nbpers = int(input('Combien d utilisateurs souhaitez vous ajouter? '))
-    if nbpers>len(web_users): 
+    if nbpers>len(storage.get_users()): 
         print('Il n y a pas assez d utilisateurs, refaite un groupe qui fonctionne')
         newgp()
     else: 
@@ -243,12 +291,12 @@ def newpeople():
     print('Voici la liste des groupes: ')
     affichegroupe()
     id_group= input('a quel groupe vouslez vous ajoutez des utilisateurs?')
-    for user in (web_users) : 
+    for user in (storage.get_users()) : 
         idhh.append(user.id) #affiche tous les id des users
     print('Voici la liste des utilisateurs: ')
     users()
     nbpers = int(input('Combien d utilisateurs souhaitez vous ajouter? '))
-    if nbpers>len(web_users): 
+    if nbpers>len(storage.get_users()): 
         print('Il n y a pas assez d utilisateurs, refaite un groupe qui fonctionne')
         newgp()
     else: 
@@ -293,7 +341,7 @@ def newmessage():
     #check il est dans groupe et new mesage 
     sendername = input('Quel est votre nom ')
     list_user = []
-    for user in web_users:
+    for user in storage.get_users():
         list_user.append(user.name)
     if sendername not in list_user : 
         print('Votre nom n \'existe pas ')
@@ -308,7 +356,7 @@ def newmessage():
     else : 
         senderid = int(get_id_from_name(sendername))
         list_member_ids = []
-        for channel in web_channels:
+        for channel in storage.get_group():
             list_member_ids += channel.member_ids
         if senderid not in list_member_ids : 
             print(senderid)
@@ -320,7 +368,7 @@ def newmessage():
                 print('Bye')
         else: 
             print('voici les groupes ou vous etes:')
-            for channel in (web_channels): 
+            for channel in (storage.get_group()): 
                 if senderid in channel.member_ids: 
                     print(channel.id)
                     for id_membre in channel.member_ids:
@@ -335,4 +383,3 @@ def newmessage():
             sauvegarderjson()
     
 
-menu()
