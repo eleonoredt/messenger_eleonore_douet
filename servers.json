@@ -51,6 +51,14 @@
         {
             "name": "amanda",
             "id": 52
+        },
+        {
+            "name": "thibaud",
+            "id": 53
+        },
+        {
+            "name": "Jeanne",
+            "id": 54
         }
     ],
     "channels": [
@@ -116,6 +124,20 @@
                 46,
                 52
             ]
+        },
+        {
+            "name": "lover",
+            "id": [
+                12,
+                13,
+                14,
+                19,
+                20,
+                22,
+                26,
+                27
+            ],
+            "member_ids": []
         }
     ],
     "messages": [
