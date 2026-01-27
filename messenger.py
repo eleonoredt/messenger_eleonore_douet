@@ -386,24 +386,26 @@ class UserInterface:
                 nom = user.name
                 break  
         return nom
-    
-parser = argparse.ArgumentParser(
-                    prog='ProgramName',
-                    description='le programme permet de créer des utilisitateurs et des groupes pour ensuite pouvoir envoyer des messages' \
-                    'Vous pouvez soit choisir de télécharger des données depuis votre ordinateur (en local) en faisant --storage-file ou depuis internet en faisant --url'
-                    )
 
-parser.add_argument('--storagefile', type=str, help="Chemin vers le fichier JSON de stockage (ex: server-data.json)")
-parser.add_argument('--url', type=str, help="Chemin vers une url à rentrer")
-args = parser.parse_args()
-if args.storagefile:
-    storage = LocalStorage(args.storagefile)
-    print(type(storage))
-elif args.url:
-    storage = RemoteStorage(args.url)
-    print(type(storage))
-else : 
-    parser.print_help()
-    exit()
-                
-UserInterface(storage).menu()
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(
+                        prog='ProgramName',
+                        description='le programme permet de créer des utilisitateurs et des groupes pour ensuite pouvoir envoyer des messages' \
+                        'Vous pouvez soit choisir de télécharger des données depuis votre ordinateur (en local) en faisant --storage-file ou depuis internet en faisant --url'
+                        )
+
+    parser.add_argument('--storagefile', type=str, help="Chemin vers le fichier JSON de stockage (ex: server-data.json)")
+    parser.add_argument('--url', type=str, help="Chemin vers une url à rentrer")
+    args = parser.parse_args()
+    if args.storagefile:
+        storage = LocalStorage(args.storagefile)
+        print(type(storage))
+    elif args.url:
+        storage = RemoteStorage(args.url)
+        print(type(storage))
+    else : 
+        parser.print_help()
+        exit()
+                    
+    UserInterface(storage).menu()
