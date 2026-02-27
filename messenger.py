@@ -4,9 +4,8 @@ import textwrap
 import requests
 import argparse
 import os
-from datetime import *
+from datetime import datetime
 
-MENU_TITLE = text2art("Messenger Eleonore", font='slant')
 
 
 
@@ -16,6 +15,9 @@ class User:
             self.id = id
     def __repr__(self) -> str:
         return f'User(name={self.name})'
+    
+    def affiche_user(self):
+        print(f"{self.id}. {self.name}")
 
 
 class Channel:
@@ -26,7 +28,7 @@ class Channel:
     def __repr__(self) -> str:
         return f'Channel(name={self.name})'
     
-    def affiche_groupe(self):
+    def affiche_groupe(self, storage):
         print('Nom du groupe : \t' + self.name)
         print('Membres du groupe : \t', end="")
         if len(self.members) > 0:
@@ -36,9 +38,9 @@ class Channel:
                     member_names.append(membre.name)
             print(", ".join(member_names))
             print("Discussion".center(100, '-'))
-            for mess in storage._messages:
+            for mess in storage.get_messages_from_channel_id(self.id):
                 if mess.channel == self.id:
-                    mess.affiche_message()
+                    mess.affiche_message(storage)
             print("-"*100)
         else:
             print("Aucun membre")
@@ -52,15 +54,17 @@ class Message:
         self.channel = channel
         self.content = content
     
-    def affiche_message(self):
-        sender_name = storage.get_name_from_id(self.sender_id)
-        message = f'[{self.reception_date}] [{sender_name}] : {self.content}'
+    def affiche_message(self, storage):
+        sender_name = storage.get_user_from_id(self.sender_id).name
+        message = f'[{self.reception_date.strftime("%Y-%m-%d %H:%M")}] [{sender_name}] \t: {self.content}'
         print(message)
 
 
 class RemoteStorage:
     def __init__(self, chemin: str):
             self.chemin = chemin
+    
+    # GET /users
     def get_users(self):
         response = requests.get(f"{self.chemin}/users")
         response_text = response.text
@@ -69,42 +73,99 @@ class RemoteStorage:
         for user in response_dict:
             rep_list.append(User(user['name'], user['id']))
         return rep_list
+    
+    # GET /users/{user_id}
+    def get_user_from_id(self, user_id):
+        response = requests.get(f"{self.chemin}/users/{user_id}")
+        response_text = response.text
+        response_dict=json.loads(response_text)
+        return User(response_dict['name'], response_dict['id'])
+
+    # POST /users/create
     def create_user(self, nomnew): 
         nom_dict = {'name': nomnew}
         envoie = requests.post(f"{self.chemin}/users/create", json = nom_dict)
         print(envoie.status_code, envoie.text)
+
+    # GET /channels
     def get_groups(self):
         responsegp = requests.get(f"{self.chemin}/channels")
         responsegp_dict=json.loads(responsegp.text)
         repgp_list:list[Channel]=[]
         for channel in responsegp_dict:
-            members = requests.get(f"{self.chemin}/userschannels/{channel['id']}/members")
-            #membersid_dict = json.loads(membersid) #pb ICI
-            members_list= members.json()
-            membersid = [m['id'] for m in members_list]
-            repgp_list.append(Channel(channel['name'], channel['id'], membersid))
+            # pour éviter trop de requêtes (looong), je remplis les membres dans get_channel_from_id
+            repgp_list.append(Channel(channel['name'], channel['id'], []))
         return repgp_list
-    def create_group(self, nomnewgp: str)->int: 
+
+        #     print(f"{self.chemin}/channels/{channel['id']}/members")
+        #     members_resp = requests.get(f"{self.chemin}/channels/{channel['id']}/members")
+        #     members_list:list[User]=[]
+        #     if members_resp.status_code == 200:
+        #         members_dict = json.loads(members_resp.text)
+        #         for user in members_dict:
+        #             members_list.append(User(user['name'], user['id']))
+        #     repgp_list.append(Channel(channel['name'], channel['id'], members_list))
+        # return repgp_list
+    
+    # GET /channels/{channel_id}
+    def get_channel_from_id(self, channel_id):
+        responsegp = requests.get(f"{self.chemin}/channels/{channel_id}")
+        responsegp_dict=json.loads(responsegp.text)
+        members = self.get_members_from_channel_id(channel_id)
+        return Channel(responsegp_dict['name'], responsegp_dict['id'], members)
+    
+    # GET /userschannels/{channel_id}/members
+    def get_members_from_channel_id(self, channel_id):
+        members_resp = requests.get(f"{self.chemin}/channels/{channel_id}/members")
+        members_list= members_resp.json()
+        membersid = [m['id'] for m in members_list]
+        members = [] #je remplis la liste de membres du groupe
+        for u in self.get_users():
+            if u.id in membersid:
+                members.append(u)
+        return members
+    
+    # POST /channels/create
+    def create_group(self, nomnewgp: str)->Channel: 
         nom_gp_dict = {'name': nomnewgp}
         envoie = requests.post(f"{self.chemin}/channels/create", json = nom_gp_dict)
-        return envoie.json()['id']
-    def join_group(self, idgp, members_id):
-        members_id_dict = {'user_id': members_id}
+        if envoie.status_code == 200:
+            print("Groupe créé avec succès.")
+            idgp = json.loads(envoie.text)['id']
+            group = Channel(nomnewgp, json.loads(envoie.text)['id'], [])
+            return group
+        else:
+            print("Erreur lors de la création du groupe.")
+        return None
+    
+    # POST /channels/{channel_id}/join
+    def join_group(self, idgp, user_id):
+        members_id_dict = {'user_id': user_id}
         envoie = requests.post(f"{self.chemin}/channels/{idgp}/join", json = members_id_dict)
-        print(envoie.status_code, envoie.text)
-    def get_messages(self):
-        response_mess = requests.get(f"{self.chemin}/messages")
+        if envoie.status_code == 200:
+            print("Utilisateur ajouté au groupe avec succès.")
+        else:
+            print("Erreur lors de l'ajout de l'utilisateur au groupe.", envoie.status_code, envoie.text)
+
+    # GET /channels/{channel_id}/messages
+    def get_messages_from_channel_id(self, channel_id):
+        response_mess = requests.get(f"{self.chemin}/channels/{channel_id}/messages")
         response_mess_text = response_mess.text
         response_dict=json.loads(response_mess_text)
-        print(response_dict)
-        rep_mess_list:list[Messages]=[]
+        rep_mess_list:list[Message]=[]
         for message in response_dict:
-            rep_mess_list.append(Messages(message['id'], message['reception_date'], message['sender_id'],message['channel_id'],message['content']))
-        return rep_mess_list
+            date = datetime.fromisoformat(message['reception_date']) #je convertis en datetime
+            rep_mess_list.append(Message(message['id'], date, message['sender_id'],message['channel_id'],message['content']))
+        return rep_mess_list    
+
+    # POST /channels/{channel_id}/messages/post
     def create_message(self, idgp, id_sender, content: str):
         message_dict = {'sender_id': id_sender, 'content': content}
         envoie = requests.post(f"{self.chemin}/channels/{idgp}/messages/post", json = (message_dict))
-        print(envoie.status_code, envoie.text)
+        if envoie.status_code == 200:
+            print("Message créé avec succès.")
+        else:
+            print("Erreur lors de la création du message.", envoie.status_code, envoie.text)
 
 
 class LocalStorage:
@@ -131,7 +192,10 @@ class LocalStorage:
                 channel_list.append(new)
             message_list:list[Message] = [] #je cree une liste vide d'elements de type Message  
             for mess in server['messages']:
-                date = datetime.strptime(mess['reception_date'], '%Y-%m-%d %H:%M:%S.%f') #je convertis en datetime
+                try:
+                    date = datetime.fromisoformat(mess['reception_date']) #je convertis en datetime
+                except ValueError:
+                    date = datetime(2025,11,4)
                 message_list.append(Message(mess['id'], date, mess['sender_id'], mess['channel'], mess['content']))
         self._users=user_list #je transforme le dic dcp par ma liste User 
         self._channels=channel_list
@@ -157,79 +221,11 @@ class LocalStorage:
             json.dump(server, fichier, indent=4)
 
     def get_users(self):
-        server = self.load_server()
+        self.load_server()
         users_list:list[User]=[]
         for user in (self._users) : 
             users_list.append(user)
         return users_list
-    
-    def create_user(self, nomnew):
-        server = self.load_server()
-        newid = max([user.id for user in self._users]) + 1
-        newuser = User(nomnew, newid)
-        self._users.append(newuser)
-        self.save_server()
-
-    def get_groups(self):
-        server = self.load_server()
-        channel_list:list[Channel] = [] #je cree une liste vide d'elements de type Channels
-        for channel in self._channels:
-            members_list = []
-            for member in channel.members: #je remplis la liste de membres du groupe
-                member = self.get_user_from_id(member.id)
-                members_list.append(member)
-            channel_list.append(Channel(channel.name, channel.id, members_list))
-        return channel_list
-    
-    def create_group(self, nomnewgp: str)->Channel:
-        idgp = []
-        self.load_server()
-        for chan in (self._channels) : 
-            idgp.append(chan.id) #liste des id de groupes 
-        idgpnew = max(idgp) + 1
-        gpnew = Channel(nomnewgp, idgpnew, [] ) #je cree nouveau groupe sans membres
-        self._channels.append(gpnew) #je l'ajoute a json
-        self.save_server()
-        return gpnew
-    
-    def join_group(self, channel: Channel, member: User): #c elle vrmt qui va download
-        self.load_server()
-        if channel.id in [c.id for c in self.get_groups()] and member.id in [u.id for u in self.get_users()]:
-            channel.members.append(member)
-        # remplacer le channel dans la liste des channels par le channel modifié
-        self._channels = [channel if c.id == channel.id else c for c in self._channels]
-        self.save_server()
-    
-    def create_message(self, idgp, id_sender, content: str):
-        self.load_server()
-        idmess = max([mess.id for mess in self._messages]) + 1
-        message = Message(idmess, datetime.datetime.now(), id_sender, idgp, content)
-        self._messages.append(message)
-        self.save_server()
-
-    def get_id_from_name(self,nom):
-        idnom = None 
-        for user in self.get_users():
-            if nom == user.name:
-                idnom = user.id
-                break 
-        return idnom
-
-    def get_name_from_id(self, user_id):
-        nom = None 
-        for user in self.get_users():
-            if user.id == user_id:
-                nom = user.name
-                break  
-        return nom
-    
-    def get_channel_from_id(self, channel_id):
-        channel = None 
-        for chan in self.get_groups():
-            if chan.id == channel_id:
-                channel = chan
-                break  
-        return channel
     
     def get_user_from_id(self, user_id):
         user = None
@@ -240,15 +236,86 @@ class LocalStorage:
                 break
         return user
 
+    def create_user(self, nomnew):
+        self.load_server()
+        newid = max([user.id for user in self._users]) + 1
+        newuser = User(nomnew, newid)
+        self._users.append(newuser)
+        self.save_server()
+
+    def get_groups(self):
+        self.load_server()
+        channel_list:list[Channel] = [] #je cree une liste vide d'elements de type Channels
+        for channel in self._channels:
+            members_list = []
+            for member in channel.members: #je remplis la liste de membres du groupe
+                member = self.get_user_from_id(member.id)
+                members_list.append(member)
+            channel_list.append(Channel(channel.name, channel.id, members_list))
+        return channel_list
+    
+    def get_channel_from_id(self, channel_id):
+        channel = None 
+        for chan in self.get_groups():
+            if chan.id == channel_id:
+                channel = chan
+                break  
+        return channel
+
+    def create_group(self, nomnewgp: str)->Channel:
+        idgp = []
+        self.load_server()
+        for chan in (self._channels) : 
+            idgp.append(chan.id) #liste des id de groupes 
+        idgpnew = max(idgp) + 1
+        members: list[User] = []
+        gpnew = Channel(nomnewgp, idgpnew, members) #je cree nouveau groupe sans membres
+        self._channels.append(gpnew) #je l'ajoute a json
+        self.save_server()
+        return gpnew
+    
+    def join_group(self, channel_id, member_id): #c elle vrmt qui va download
+        self.load_server()
+        channel = self.get_channel_from_id(channel_id)
+        member = self.get_user_from_id(member_id)
+        if channel and member:
+            channel.members.append(member)
+        # remplacer le channel dans la liste des channels par le channel modifié
+        self._channels = [channel if c.id == channel.id else c for c in self._channels]
+        self.save_server()
+    
+    def get_messages_from_channel_id(self, channel_id):
+        mess_list:list[Message] = []
+        for mess in self.get_messages():
+            if mess.channel == channel_id:
+                mess_list.append(mess)
+        return mess_list
+
+    def create_message(self, idgp, id_sender, content: str):
+        self.load_server()
+        idmess = max([mess.id for mess in self._messages]) + 1
+        message = Message(idmess, datetime.now(), id_sender, idgp, content)
+        self._messages.append(message)
+        self.save_server()
+  
+    def get_messages(self):
+        self.load_server()
+        mess_list:list[Message]=[]
+        for mess in self._messages:
+            mess_list.append(mess)
+        return mess_list
+
+
 
 
 #if response.status_code = 2 : #Inferieur ou egal a 300
 #response.raise_for_status()
 
 class UserInterface: 
-    def __init__(self, chemin): 
-        self.chemin = chemin
+    def __init__(self, storage: LocalStorage | RemoteStorage): 
+        self._storage = storage
     def menu(self):
+        MENU_TITLE = text2art("Messenger Eleonore", font='slant')
         choice = ''
         while choice != 'x' and choice != 'X':
             os.system('cls' if os.name == 'nt' else 'clear') #nettoie le terminal pour lisibilité        
@@ -282,7 +349,6 @@ class UserInterface:
                 case 'gp' | 'GP':
                     choicegp = ' '
                     while len(choicegp) > 0:
-                        storage.load_server() #pour que les changements soient pris en compte
                         os.system('cls' if os.name == 'nt' else 'clear')
                         print("="*100)
                         self.affiche_groupes()
@@ -291,19 +357,23 @@ class UserInterface:
                         print("="*100)
                         choicegp = input('--> ')
                         if (choicegp.isdigit()):
-                            if int(choicegp) in [channel.id for channel in storage.get_groups()]: 
-                                channel = storage.get_channel_from_id(int(choicegp))
-                                while len(choicegp) > 0:
+                            # AFFICHE UN GROUPE
+                            if int(choicegp) in [channel.id for channel in self._storage.get_groups()]:
+                                channel = self._storage.get_channel_from_id(int(choicegp))
+                                while len(choicegp) > 0: 
                                     os.system('cls' if os.name == 'nt' else 'clear')
                                     print("="*100)
-                                    channel.affiche_groupe()
+                                    channel.affiche_groupe(self._storage)
                                     print("="*100)
-                                    print('nm: Nouveau message dans ce groupe \t [autre]: Menu Principal')
+                                    print('nm: Nouveau message dans ce groupe \taj: Ajouter un membre \t[autre]: Menu Principal')
                                     print("="*100)
                                     choicegp = input('--> ')
                                     if choicegp == 'nm':
                                         self.newmessage(channel)
-
+                                        channel = self._storage.get_channel_from_id(channel.id) #je redownload le channel pour que les messages soient à jour
+                                    if choicegp == 'aj':
+                                        self.newpeople(channel)
+                                        channel = self._storage.get_channel_from_id(channel.id)
                             else:
                                 print('Ce groupe n\'existe pas, essayez à nouveau.')
                         if choicegp == 'ng':
@@ -313,23 +383,24 @@ class UserInterface:
 
     def users(self):
         print('Les utilisitateurs sont: ')
-        users_list = storage.get_users()
+        users_list = self._storage.get_users()
         for user in (users_list) : 
             nomid = str(user.id) + '. ' + user.name #nomid=f"{user['id']}. {user['name']}
             print(nomid)
 
     def newuser(self):
         nomnew = input('Donner le nom du nouvel utilisateur: ')
-        storage.create_user(nomnew)
+        self._storage.create_user(nomnew)
 
     def affiche_groupes(self):
-        for channel in (storage.get_groups()) :
+        groups = self._storage.get_groups()
+        for channel in groups :
             groupe = str(channel.id) + '. ' + channel.name
             print(groupe)        
 
     def newgp(self):
         newnomgp = input('Donnez le nom du groupe:  ')
-        a = storage.create_group(newnomgp)
+        a = self._storage.create_group(newnomgp)
         self.newpeople(a)
         
     def newpeople(self, group): 
@@ -340,47 +411,18 @@ class UserInterface:
             choice_id = input('--> ')
             if choice_id.isdigit():
                 user_id = int(choice_id)
-                if user_id not in [user.id for user in storage.get_users()] or user_id in [user.id for user in group.members]:
+                if user_id not in [user.id for user in self._storage.get_users()] or user_id in [user.id for user in group.members]:
                     print('Cet id n\'existe pas ou est déjà dans le groupe, réessayez.')
-                    # self.newgp()
                 else:
-                    new_member = storage.get_user_from_id(user_id)
-                    storage.join_group(group, new_member)
-
-    """def suppgp(self): 
-        gpid = int(input('Donner l id du gp que vous voulez sup '))
-        initial_length = len(server['channels'])
-        server['channels'] = [
-            channel for channel in server['channels'] 
-            if channel.id != gpid
-        ]
-        final_length = len(server['channels'])
-        if final_length < initial_length:
-            sauvegarderjson()
-            print("Groupe supprimé et le fichier a été sauvegardé.")
-        else:
-            print(" Erreur : Aucun groupe trouvé avec l ID.")
-
-    def supp_message(): 
-        messid = int(input('Donner l id du message que vous voulez sup '))
-        initial_length = len(server['messages'])
-        server['messages'] = [
-            mess for mess in server['messages'] 
-            if mess.id != messid
-        ]
-        final_length = len(server['messages'])
-        if final_length < initial_length:
-            sauvegarderjson()
-            print("Message supprimé et le fichier a été sauvegardé.")
-        else:
-            print(" Erreur : Aucun message trouvé avec l ID.")"""
+                    new_member = self._storage.get_user_from_id(user_id)
+                    self._storage.join_group(group.id, new_member.id)
 
     def affiche_membres(self, channel):
         print('Membres du groupe :')
         if len(channel.members) > 0:
             for membre in channel.members:
                 if membre:
-                    print(f"{membre.id}. {membre.name}")
+                    membre.affiche_user()
         else:
             print("Aucun membre")
 
@@ -394,13 +436,13 @@ class UserInterface:
             choice_id = input('--> ')
             if choice_id.isdigit():
                 sender_id = int(choice_id)
-                if sender_id not in [user.id for user in storage.get_users()]:
+                if sender_id not in [user.id for user in self._storage.get_users()]:
                     print('Cet id n\'existe pas, réessayez.')
                 elif sender_id not in [member.id for member in channel.members]:
                     print('Cet utilisateur n\'est pas dans le groupe, réessayez.')
                 else:
                     content = input('Ecrivez votre message: ')
-                    storage.create_message(channel.id, sender_id, content)
+                    self._storage.create_message(channel.id, sender_id, content)
                     return
     
     
@@ -415,14 +457,16 @@ parser = argparse.ArgumentParser(
         --> votre ordinateur (en local) en utilisant --storage-file
         --> serveur internet (en remote) en utilisant --url
     '''))
-parser.add_argument('--storagefile', type=str, help="Chemin vers le fichier JSON de stockage (ex: server-data.json)")
+parser.add_argument('--storage-file', type=str, help="Chemin vers le fichier JSON de stockage (ex: server-data.json)")
 parser.add_argument('--url', type=str, help="Chemin vers une url à rentrer")
 args = parser.parse_args()
 
-if args.storagefile:
-    storage = LocalStorage(args.storagefile)
+if args.storage_file:
+    storage = LocalStorage(args.storage_file)
     print(type(storage))
 elif args.url:
+    if args.url[-1] == '/':
+        args.url = args.url[:-1]
     storage = RemoteStorage(args.url)
     print(type(storage))
 else : 
